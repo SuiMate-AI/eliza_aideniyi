@@ -4,18 +4,11 @@ import {
   defaultCharacter,
   ModelProviderName,
 } from "@elizaos/core";
-import { TwitterAutomationService } from "./services/twitterAutomationService.ts";
 
 export const character: Character = {
   name: "Eliza",
-  plugins: [
-    {
-      name: "Twitter Automation",
-      description: "Automate Twitter actions",
-      services: [new TwitterAutomationService()],
-    },
-  ],
-  clients: [],
+  plugins: [],
+  clients: [Clients.TWITTER],
   modelProvider: ModelProviderName.OPENAI,
   settings: {
     voice: {

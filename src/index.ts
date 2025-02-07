@@ -2,6 +2,7 @@ import { DirectClient } from "@elizaos/client-direct";
 import {
   AgentRuntime,
   elizaLogger,
+  IAgentRuntime,
   settings,
   stringToUuid,
   type Character,
@@ -23,6 +24,7 @@ import {
   parseArguments,
 } from "./config/index.ts";
 import { initializeDatabase } from "./database/index.ts";
+import { startTwitterChat } from "./chat/twitter.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,19 +134,19 @@ const startAgents = async () => {
   const args = parseArguments();
 
   let charactersArg = args.characters || args.character;
-  let characters = [character];
+  let currentCharacter = character;
 
   console.log("charactersArg", charactersArg);
   if (charactersArg) {
-    characters = await loadCharacters(charactersArg);
+    const characters = await loadCharacters(charactersArg);
+    currentCharacter = characters[0]; // Just take the first character
   }
-  console.log("characters", characters);
+  console.log("character", currentCharacter);
+  let runtime: IAgentRuntime;
   try {
-    for (const character of characters) {
-      await startAgent(character, directClient as DirectClient);
-    }
+    runtime = await startAgent(currentCharacter, directClient as DirectClient);
   } catch (error) {
-    elizaLogger.error("Error starting agents:", error);
+    elizaLogger.error("Error starting agent:", error);
   }
 
   while (!(await checkPortAvailable(serverPort))) {
@@ -167,8 +169,11 @@ const startAgents = async () => {
   const isDaemonProcess = process.env.DAEMON_PROCESS === "true";
   if (!isDaemonProcess) {
     elizaLogger.log("Chat started. Type 'exit' to quit.");
-    const chat = startChat(characters);
+    const chat = startChat([currentCharacter]);
     chat();
+
+    const twitter = startTwitterChat([currentCharacter], runtime);
+    twitter();
   }
 };
 

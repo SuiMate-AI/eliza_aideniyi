@@ -3,7 +3,7 @@ import { DiscordClientInterface } from "@elizaos/client-discord";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 
 import { Character, IAgentRuntime } from "@elizaos/core";
-import TwitterClientInterface from "@elizaos/client-twitter";
+import TwitterClientInterface from "./twitter/index.ts";
 
 export async function initializeClients(
   character: Character,
