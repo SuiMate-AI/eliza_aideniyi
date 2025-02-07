@@ -1,7 +1,6 @@
-*.ts
+
 dist
-!index.ts
-!character.ts
+
 .env
 node_modules
 dist/
