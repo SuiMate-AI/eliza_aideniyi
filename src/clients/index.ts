@@ -1,8 +1,9 @@
 import { AutoClientInterface } from "@elizaos/client-auto";
 import { DiscordClientInterface } from "@elizaos/client-discord";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
-import { TwitterClientInterface } from "@elizaos/client-twitter";
+
 import { Character, IAgentRuntime } from "@elizaos/core";
+import TwitterClientInterface from "@elizaos/client-twitter";
 
 export async function initializeClients(
   character: Character,
@@ -16,9 +17,9 @@ export async function initializeClients(
     if (autoClient) clients.push(autoClient);
   }
 
-  if (clientTypes.includes("discord")) {
-    clients.push(await DiscordClientInterface.start(runtime));
-  }
+  // if (clientTypes.includes("discord")) {
+  //   clients.push(await DiscordClientInterface.start(runtime));
+  // }
 
   if (clientTypes.includes("telegram")) {
     const telegramClient = await TelegramClientInterface.start(runtime);
