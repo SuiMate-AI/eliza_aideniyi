@@ -1348,6 +1348,15 @@ export class TwitterPostClient {
     }
   }
 
+  async likeTweet(tweetId: string) {
+    try {
+      await this.client.twitterClient.likeTweet(tweetId);
+      console.log(`Successfully liked tweet ${tweetId}`);
+    } catch (error) {
+      console.error("Error liking tweet:", error);
+    }
+  }
+
   async quickReply(tweetId: string, replyText: string) {
     try {
       await this.client.twitterClient.sendTweet(replyText, tweetId);

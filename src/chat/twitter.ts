@@ -56,9 +56,6 @@ export function startTwitterChat(characters: any[], runtime: IAgentRuntime) {
     apiKey: process.env["TWITTER_COOKIES"],
   });
 
-  // Track the last tweet ID for replies
-  let lastTweetId: string | undefined;
-
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -81,11 +78,15 @@ export function startTwitterChat(characters: any[], runtime: IAgentRuntime) {
       const thread = await getFullThread(rettiwt, (value as any).id_str);
       // Update lastTweetId to the tweet we're replying to
       const lastTweet = thread[thread.length - 1];
-      lastTweetId = lastTweet.tweetId;
 
       if (lastTweet.tweetBy.userName === process.env.TWITTER_USERNAME) {
         console.log("Skipping reply to self");
         continue;
+      }
+
+      let conversation = "";
+      for (const tweet of thread) {
+        conversation += `${tweet.tweetBy.fullName} (@${tweet.tweetBy.userName}): ${tweet.tweetFullText}\n`;
       }
 
       const serverPort = parseInt(settings.SERVER_PORT || "3000");
@@ -98,9 +99,9 @@ export function startTwitterChat(characters: any[], runtime: IAgentRuntime) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: thread[thread.length - 1].tweetFullText,
-            userId: thread[thread.length - 1].tweetBy.fullName,
-            userName: thread[thread.length - 1].tweetBy.fullName,
+            text: conversation,
+            userId: lastTweet.tweetBy.fullName,
+            userName: lastTweet.tweetBy.fullName,
           }),
         }
       );
@@ -116,9 +117,12 @@ export function startTwitterChat(characters: any[], runtime: IAgentRuntime) {
         // });
         const twitterClient = await runtime.clients[0];
         const tweetId = await twitterClient.post.quickReply(
-          lastTweetId,
+          lastTweet.tweetId,
           message.text
         );
+        setTimeout(async () => {
+          await twitterClient.post.likeTweet(lastTweet.tweetId);
+        }, 1000 + Math.floor(Math.random() * 10000));
       }
     }
   }
