@@ -5,7 +5,6 @@ import {
   ModelProviderName,
 } from "@elizaos/core";
 import { TweetPostClient } from "./plugin/aideniyi/TweetPostClient.ts";
-import { TwitterChatClient } from "./plugin/twitter/TwitterChatClient.ts";
 
 export const character: Character = {
   name: "AIdeniyi",

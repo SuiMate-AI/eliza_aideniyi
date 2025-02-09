@@ -18,15 +18,35 @@ model TwitterPosts {
 }
 
 model TwitterQuestions {
-  id                    String   @id
+  id                    BigInt           @id @default(autoincrement())
   question              String
   answer                String
   context               String
+  difficulty            Int
   totalAward            Int
   awardTokenType        String
   numberOfReceivers     Int
+  postId                BigInt?
+  createdByUsername     String?
+  createdByUserId       String?
   questionPostUrl       String?
+  answerPosts           TwitterAnswers[]
   winnerAnnouncementUrl String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+}
+
+model TwitterAnswers {
+  id                    BigInt            @id @default(autoincrement())
+  postId                BigInt
+  createdByUsername     String
+  createdByUserId       String
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  passEvaluation        Boolean?
+  isWinner              Boolean?
+  evaluationLog         String?
+  TwitterQuestion       TwitterQuestions? @relation(fields: [twitterQuestionId], references: [id])
+  twitterQuestionId     BigInt?
+  twitterQuestionPostId String?
 }
