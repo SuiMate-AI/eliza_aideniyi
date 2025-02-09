@@ -24,7 +24,6 @@ import {
   parseArguments,
 } from "./config/index.ts";
 import { initializeDatabase } from "./database/index.ts";
-import { startTwitterChat } from "./chat/twitter.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -172,9 +171,6 @@ const startAgents = async () => {
     elizaLogger.log("Chat started. Type 'exit' to quit.");
     const chat = startChat([currentCharacter]);
     chat();
-
-    const twitter = startTwitterChat([currentCharacter], runtime);
-    twitter();
   }
 };
 

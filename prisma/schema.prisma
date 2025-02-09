@@ -16,3 +16,17 @@ model TwitterPosts {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
+
+model TwitterQuestions {
+  id                    String   @id
+  question              String
+  answer                String
+  context               String
+  totalAward            Int
+  awardTokenType        String
+  numberOfReceivers     Int
+  questionPostUrl       String?
+  winnerAnnouncementUrl String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}

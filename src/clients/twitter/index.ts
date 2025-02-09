@@ -38,6 +38,7 @@ class TwitterManager {
 
     // Mentions and interactions
     this.interaction = new TwitterInteractionClient(this.client, runtime);
+    // this.interaction.start();
   }
 }
 

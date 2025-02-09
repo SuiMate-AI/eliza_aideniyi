@@ -1359,10 +1359,23 @@ export class TwitterPostClient {
 
   async quickReply(tweetId: string, replyText: string) {
     try {
-      await this.client.twitterClient.sendTweet(replyText, tweetId);
+      let response;
+      if (replyText.length < 280) {
+        response = await this.client.twitterClient.sendTweet(
+          replyText,
+          tweetId
+        );
+      } else {
+        response = await this.client.twitterClient.sendNoteTweet(
+          replyText,
+          tweetId
+        );
+      }
       console.log(`Successfully replied to tweet ${tweetId}`);
+      const body = await response.json();
+      return body.data.create_tweet.tweet_results.result.rest_id;
     } catch (error) {
-      console.error("Error sending quick reply:", error);
+      throw error;
     }
   }
 }
