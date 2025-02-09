@@ -1,10 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./prisma.db.sqlite"
+  provider  = "postgresql"
+  url       = env("SUPABASE_DATABASE_URL")
+  directUrl = env("SUPABASE_DIRECT_URL")
+  schemas   = ["aideniyi"]
 }
 
 model TwitterPosts {
@@ -15,6 +18,8 @@ model TwitterPosts {
   fullThread        String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@schema("aideniyi")
 }
 
 model TwitterQuestions {
@@ -34,6 +39,8 @@ model TwitterQuestions {
   winnerAnnouncementUrl String?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
+
+  @@schema("aideniyi")
 }
 
 model TwitterAnswers {
@@ -49,4 +56,6 @@ model TwitterAnswers {
   TwitterQuestion       TwitterQuestions? @relation(fields: [twitterQuestionId], references: [id])
   twitterQuestionId     BigInt?
   twitterQuestionPostId String?
+
+  @@schema("aideniyi")
 }
