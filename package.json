@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
+    "build": "tsup src/index.ts --format esm --dts && npx prisma db push && pnpm add better-sqlite3@latest && cd node_modules/better-sqlite3 && pnpm install && pnpm run build-release && cd ../..",
     "start": "tsc && node --loader ts-node/esm src/index.ts",
     "clean": "./scripts/clean.sh",
     "start:service:all": "pm2 start pnpm --name=\"all\" --restart-delay=3000 --max-restarts=10 -- run start:all",
@@ -24,6 +24,7 @@
     "@elizaos/plugin-node": "0.1.9",
     "@elizaos/plugin-solana": "0.1.9",
     "@elizaos/plugin-starknet": "0.1.9",
+    "@prisma/client": "^6.3.1",
     "@tavily/core": "0.0.2",
     "agent-twitter-client": "^0.0.18",
     "amqplib": "0.10.5",
