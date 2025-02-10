@@ -16,10 +16,12 @@ import {
   getEmbeddingZeroVector,
   type IImageDescriptionService,
   ServiceType,
+  generateObject,
 } from "@elizaos/core";
 import type { ClientBase } from "./base";
 import { buildConversationThread, sendTweet, wait } from "./utils.ts";
 import { RAGManager } from "./ragManager.ts";
+import { z } from "zod";
 
 export const twitterMessageHandlerTemplate =
   `
@@ -94,6 +96,39 @@ Thread of Tweets You Are Replying To:
 # INSTRUCTIONS: Respond with [RESPOND] if {{agentName}} should respond, or [IGNORE] if {{agentName}} should not respond to the last message and [STOP] if {{agentName}} should stop participating in the conversation.
 ` + shouldRespondFooter;
 
+export interface TransferContent extends Content {
+  recipient: string;
+  amount: number;
+  symbol: string;
+}
+
+export const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
+
+Example response:
+\`\`\`json
+{
+    "recipient": "Eason_C13",
+    "amount": 10000000,
+    "symbol": "SUI"
+}
+\`\`\`
+
+{{recentMessages}}
+
+Given the recent messages, extract the following information about the requested token transfer:
+- Tweet username, not including the @ symbol
+- Amount to transfer, not including $ symbol
+- Token symbol, not including $ symbol
+
+Respond with a JSON markdown block containing only the extracted values.`;
+
+// Define the schema for the expected output
+export const transferSchema = z.object({
+  recipient: z.string(),
+  amount: z.number(),
+  symbol: z.string(),
+});
+
 export const ragManager = new RAGManager();
 
 export class TwitterInteractionClient {
@@ -107,7 +142,7 @@ export class TwitterInteractionClient {
   }
 
   async start() {
-    if (process.env.DISABLE_TWITTER_DEFAULT_CLIENTS) return;
+    // if (process.env.DISABLE_TWITTER_DEFAULT_CLIENTS) return;
     setInterval(() => {
       console.log("handleTwitterInteractionsLoop");
       this.handleTwitterInteractions().then(() => {});
@@ -304,12 +339,13 @@ export class TwitterInteractionClient {
   }) {
     await this.client.twitterClient.likeTweet(tweet.id);
     // Only skip if tweet is from self AND not from a target user
-    if (
-      tweet.userId === this.client.profile.id &&
-      !this.client.twitterConfig.TWITTER_TARGET_USERS.includes(tweet.username)
-    ) {
-      return;
-    }
+    // TODO
+    // if (
+    //   tweet.userId === this.client.profile.id &&
+    //   !this.client.twitterConfig.TWITTER_TARGET_USERS.includes(tweet.username)
+    // ) {
+    //   return;
+    // }
 
     if (!message.content.text) {
       console.log("Skipping Tweet with no text", tweet.id);
@@ -423,6 +459,62 @@ export class TwitterInteractionClient {
       return { text: "Response Decision:", action: shouldRespond };
     }
 
+    // Compose transfer context
+    const transferContext = composeContext({
+      state,
+      template: transferTemplate,
+    });
+
+    // // Generate transfer content with the schema
+    const content = await generateObject({
+      runtime: this.runtime,
+      context: transferContext,
+      schema: transferSchema as any,  // Use any as temporary workaround
+      modelClass: ModelClass.SMALL,
+    });
+    const transferContent = content.object as TransferContent;
+
+    const tokenSymbolList = [["SUI", 9]];
+
+    console.error("[DEBUG] transferContent", transferContent);
+
+    // Check if amount contains valid token symbol
+    const hasValidTransfer = typeof transferContent.recipient === 'string' && 
+      typeof transferContent.amount === 'number' && 
+      transferContent.amount > 0 &&
+      tokenSymbolList.some(symbol => transferContent.symbol.toUpperCase().includes(symbol[0] as string));
+    const amountInBaseUnits = Math.floor(transferContent.amount * Math.pow(10, tokenSymbolList[0][1] as number));
+
+    if (hasValidTransfer) {
+      try {
+        const res = await fetch("https://giftdrop.io/api/xWallet/transfer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            giftdrop_api_key: process.env.GIFTDROP_API_KEY,
+          },
+          body: JSON.stringify({
+            senderUsername: tweet.username,
+            receiverUsername: transferContent.recipient,
+            amount: amountInBaseUnits, // remember to process decimals
+            coinType: "0x2::sui::SUI",
+          }),
+        });
+
+        // TODO
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const responseData = await res.json();
+
+        console.error("[DEBUG] res", res);
+      } catch (error) {
+        console.error("[DEBUG] giftdrop error", error);
+      }
+    } else {
+      console.error("[DEBUG] no valid transfer");
+    }
+
     const context = composeContext({
       state: {
         ...state,
@@ -457,37 +549,11 @@ export class TwitterInteractionClient {
         twitterMessageHandlerTemplate,
     });
 
-    // TODO: check if user's input is related to SUI
-    // const response = await generateMessageResponse({
-    //   runtime: this.runtime,
-    //   context,
-    //   modelClass: ModelClass.LARGE,
-    // });
-
-    let ragResponse = "";
-    await ragManager.handleChatStream(message.content.text, (text) => {
-      // user input: message.content.text
-      ragResponse += text;
+    const response = await generateMessageResponse({
+      runtime: this.runtime,
+      context,
+      modelClass: ModelClass.LARGE,
     });
-    ragResponse = ragResponse.split("</think>")[1];
-    let response = {
-      user: this.runtime.character.name,
-      text: "",
-      action: "CONTINUE",
-      inReplyTo: stringToUuid(tweet.id + "-" + this.runtime.agentId),
-    };
-
-    const removeQuotes = (str: string) => str.replace(/^['"](.*)['"]$/, "$1");
-
-    const stringId = stringToUuid(tweet.id + "-" + this.runtime.agentId);
-
-    response.inReplyTo = stringId;
-
-    // overwrite response
-    // response.text = removeQuotes(response.text);
-    response.text = ragResponse.replaceAll("**", "").replaceAll("*", "");
-
-    console.error("[DEBUG] response", response);
 
     if (response.text) {
       if (this.isDryRun) {
