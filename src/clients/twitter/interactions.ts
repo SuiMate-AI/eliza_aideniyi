@@ -519,19 +519,19 @@ export class TwitterInteractionClient {
         const data = await res.json();
         if (data.success) {
           console.log(
-            `Transfer ${amountInBaseUnits} $SUI successfully from ${tweet.username} to ${transferContent.recipient}`
+            `Transfer ${transferContent.amount} $SUI successfully from ${tweet.username} to ${transferContent.recipient}`
           );
           response.text =
-            `🎁 Transfer ${amountInBaseUnits} $SUI successfully from @${tweet.username} to @${transferContent.recipient}!\n\n` +
+            `🎁 Transfer ${transferContent.amount} $SUI successfully from @${tweet.username} to @${transferContent.recipient}!\n\n` +
             `View Transaction at https://giftdrop.io/xwallet/tx/${data.transactionDigest}\n\n` +
             `Manage your assets at https://giftdrop.io/xwallet`;
         } else {
           console.log(
-            `Transfer failed from ${tweet.username} to ${transferContent.recipient} for ${amountInBaseUnits} SUI`
+            `Transfer failed from ${tweet.username} to ${transferContent.recipient} for ${transferContent.amount} SUI`
           );
           console.log("Error message: ", data.message);
           response.text =
-            `❌ Transfer ${amountInBaseUnits} $SUI failed from @${tweet.username} to @${transferContent.recipient}!\n\n` +
+            `❌ Transfer ${transferContent.amount} $SUI failed from @${tweet.username} to @${transferContent.recipient}!\n\n` +
             `Error message: ${data.message}\n\n` +
             `You may manage your assets at https://giftdrop.io/xwallet`;
         }
