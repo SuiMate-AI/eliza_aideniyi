@@ -19,6 +19,7 @@ import {
 } from "@elizaos/core";
 import type { ClientBase } from "./base";
 import { buildConversationThread, sendTweet, wait } from "./utils.ts";
+import { RAGManager } from "./ragManager.ts";
 
 export const twitterMessageHandlerTemplate =
   `
@@ -92,6 +93,8 @@ Thread of Tweets You Are Replying To:
 
 # INSTRUCTIONS: Respond with [RESPOND] if {{agentName}} should respond, or [IGNORE] if {{agentName}} should not respond to the last message and [STOP] if {{agentName}} should stop participating in the conversation.
 ` + shouldRespondFooter;
+
+export const ragManager = new RAGManager();
 
 export class TwitterInteractionClient {
   client: ClientBase;
@@ -453,19 +456,36 @@ export class TwitterInteractionClient {
         twitterMessageHandlerTemplate,
     });
 
-    const response = await generateMessageResponse({
-      runtime: this.runtime,
-      context,
-      modelClass: ModelClass.LARGE,
-    });
+    // TODO: check if user's input is related to SUI
+    // const response = await generateMessageResponse({
+    //   runtime: this.runtime,
+    //   context,
+    //   modelClass: ModelClass.LARGE,
+    // });
 
+    let ragResponse = '';
+    await ragManager.handleChatStream(message.content.text, (text) => { // user input: message.content.text
+      ragResponse += text;
+    });
+    ragResponse = ragResponse.split("</think>")[1];
+    let response = {
+      user: this.runtime.character.name,
+      text: "",
+      action: "CONTINUE",
+      inReplyTo: stringToUuid(tweet.id + "-" + this.runtime.agentId),
+    };
+    
     const removeQuotes = (str: string) => str.replace(/^['"](.*)['"]$/, "$1");
 
     const stringId = stringToUuid(tweet.id + "-" + this.runtime.agentId);
 
     response.inReplyTo = stringId;
 
-    response.text = removeQuotes(response.text);
+    // overwrite response
+    // response.text = removeQuotes(response.text);
+    response.text = ragResponse.replaceAll("**", "").replaceAll("*", "");
+
+    console.error("[DEBUG] response", response);
 
     if (response.text) {
       if (this.isDryRun) {
