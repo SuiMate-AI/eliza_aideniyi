@@ -469,7 +469,7 @@ export class TwitterInteractionClient {
     const content = await generateObject({
       runtime: this.runtime,
       context: transferContext,
-      schema: transferSchema as any,  // Use any as temporary workaround
+      schema: transferSchema as any, // Use any as temporary workaround
       modelClass: ModelClass.SMALL,
     });
     const transferContent = content.object as TransferContent;
@@ -479,11 +479,27 @@ export class TwitterInteractionClient {
     console.error("[DEBUG] transferContent", transferContent);
 
     // Check if amount contains valid token symbol
-    const hasValidTransfer = typeof transferContent.recipient === 'string' && 
-      typeof transferContent.amount === 'number' && 
+    const hasValidTransfer =
+      typeof transferContent.recipient === "string" &&
+      typeof transferContent.amount === "number" &&
       transferContent.amount > 0 &&
-      tokenSymbolList.some(symbol => transferContent.symbol.toUpperCase().includes(symbol[0] as string));
-    const amountInBaseUnits = Math.floor(transferContent.amount * Math.pow(10, tokenSymbolList[0][1] as number));
+      tokenSymbolList.some((symbol) =>
+        transferContent.symbol.toUpperCase().includes(symbol[0] as string)
+      );
+    const amountInBaseUnits = Math.floor(
+      transferContent.amount * Math.pow(10, tokenSymbolList[0][1] as number)
+    );
+
+    if (transferContent.recipient.startsWith("@")) {
+      transferContent.recipient = transferContent.recipient.slice(1);
+    }
+
+    let response = {
+      user: this.runtime.character.name,
+      text: "",
+      action: "CONTINUE",
+      inReplyTo: stringToUuid(tweet.id + "-" + this.runtime.agentId),
+    };
 
     if (hasValidTransfer) {
       try {
@@ -500,12 +516,25 @@ export class TwitterInteractionClient {
             coinType: "0x2::sui::SUI",
           }),
         });
-
-        // TODO
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        if (data.success) {
+          console.log(
+            `Transfer ${amountInBaseUnits} $SUI successfully from ${tweet.username} to ${transferContent.recipient}`
+          );
+          response.text =
+            `🎁 Transfer ${amountInBaseUnits} $SUI successfully from @${tweet.username} to @${transferContent.recipient}!\n\n` +
+            `View Transaction at https://giftdrop.io/xwallet/tx/${data.transactionDigest}\n\n` +
+            `Manage your assets at https://giftdrop.io/xwallet`;
+        } else {
+          console.log(
+            `Transfer failed from ${tweet.username} to ${transferContent.recipient} for ${amountInBaseUnits} SUI`
+          );
+          console.log("Error message: ", data.message);
+          response.text =
+            `❌ Transfer ${amountInBaseUnits} $SUI failed from @${tweet.username} to @${transferContent.recipient}!\n\n` +
+            `Error message: ${data.message}\n\n` +
+            `You may manage your assets at https://giftdrop.io/xwallet`;
         }
-        const responseData = await res.json();
 
         console.error("[DEBUG] res", res);
       } catch (error) {
@@ -549,11 +578,11 @@ export class TwitterInteractionClient {
         twitterMessageHandlerTemplate,
     });
 
-    const response = await generateMessageResponse({
-      runtime: this.runtime,
-      context,
-      modelClass: ModelClass.LARGE,
-    });
+    // const response = await generateMessageResponse({
+    //   runtime: this.runtime,
+    //   context,
+    //   modelClass: ModelClass.LARGE,
+    // });
 
     if (response.text) {
       if (this.isDryRun) {
