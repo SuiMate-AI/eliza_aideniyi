@@ -76,7 +76,7 @@ class GoogleSheetHandler {
 
 // Example Usage
 const SHEET_ID = process.env.GOOGLE_SHEET_ID || "";
-const RANGE = "AIdeniyi_Database!A1:F1000"; // Adjust range as needed
+const RANGE = `${process.env.GOOGLE_SHEET_NAME}!A1:Z1000`; // Adjust range as needed
 
 const sheetHandler = new GoogleSheetHandler(SHEET_ID, RANGE);
 export default sheetHandler;

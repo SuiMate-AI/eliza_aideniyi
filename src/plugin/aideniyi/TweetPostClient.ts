@@ -180,9 +180,26 @@ export class TweetPostClient implements Client {
         console.log(
           "[TweetPostClient] No TwitterQuestions found or last post is older than 30 minutes."
         );
-        const questions = await sheetHandler.getSheetAsJson();
-        const questionToPost = parseQuestionRow(questions[0]);
-        console.log({ questionToPost });
+        let questions = await sheetHandler.getSheetAsJson();
+
+        let questionToPost = parseQuestionRow(questions[0]);
+        while (true) {
+          const exist = await prisma.twitterQuestion.findFirst({
+            where: {
+              question: questionToPost.question,
+            },
+          });
+          if (exist) {
+            console.log(
+              `[TweetPostClient] Question "${questionToPost.question}" already exists, skipping...`
+            );
+            await sheetHandler.removeSecondRow();
+            questions = questions.slice(1);
+            questionToPost = parseQuestionRow(questions[0]);
+          } else {
+            break;
+          }
+        }
 
         // do something with questions
         const tweetId = await this.tweet(questionToPost.question);
@@ -226,6 +243,7 @@ export class TweetPostClient implements Client {
       }
 
       const body = await response.json();
+      console.log("body", JSON.stringify(body, null, 2));
 
       const resultTweetId = body.data.create_tweet.tweet_results.result
         .rest_id as string;
