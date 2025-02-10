@@ -1,0 +1,1 @@
+pnpm run start 2>&1 | tee "./log/$(date +"%Y-%m-%d_%H_%M").log"
