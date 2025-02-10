@@ -3,21 +3,12 @@ import {
   FetcherService,
   IUserNotificationsResponse,
   Rettiwt,
-  User,
 } from "rettiwt-api";
 import { Client, IAgentRuntime, settings } from "@elizaos/core";
 import readline from "readline";
 import { sleep } from "../../utils/sleep.ts";
 import { SearchMode } from "agent-twitter-client";
-interface TweetThread {
-  tweetId: string;
-  tweetFullText: string | undefined;
-  tweetReplyTo: string | undefined;
-  tweetBy: User;
-  createdAt_str: string | undefined;
-  createdAt: Date | undefined;
-}
-
+import { TweetThread } from "../../utils/TweetThread.ts";
 export class TwitterChatClient implements Client {
   private handledTweetIds: string[] = [];
   private rettiwt: Rettiwt;
@@ -116,7 +107,7 @@ export class TwitterChatClient implements Client {
     await this.handleNewTweets((response.globalObjects as any).tweets, runtime);
   }
 
-  private async getFullThread(tweetId: string): Promise<TweetThread[]> {
+  async getFullThread(tweetId: string): Promise<TweetThread[]> {
     const thread: TweetThread[] = [];
 
     const collectReplies = async (id: string) => {

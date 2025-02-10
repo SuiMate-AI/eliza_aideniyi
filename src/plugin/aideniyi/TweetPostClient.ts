@@ -7,8 +7,11 @@ import { Scraper } from "agent-twitter-client";
 import { getRepliesToTweet } from "../../utils/getRepliesToTweet.ts";
 import { atomaChatCompletion } from "../../utils/atomaChatCompletion.ts";
 import { sleep, sleepRandom } from "../../utils/sleep.ts";
+import { RAGManager } from "../../clients/twitter/ragManager.ts";
+import { TweetThread } from "../../utils/TweetThread.ts";
+import { Rettiwt } from "rettiwt-api";
 const prisma = new PrismaClient();
-
+export const ragManager = new RAGManager();
 export class TweetPostClient implements Client {
   // Start client connection
   private runtime: IAgentRuntime;
@@ -128,8 +131,18 @@ export class TweetPostClient implements Client {
                     winnerTweetId,
                 },
               });
+              this.explainAnswer(winnerTweetId)
+                .then(() => {
+                  console.log(
+                    "Successfully explained the answer for question",
+                    question.id
+                  );
+                })
+                .catch((e) => {
+                  console.log("Error when explaining the answer", e);
+                });
               await this.tweet(
-                `You may check the log for this question's answer checking process with Atoma TEE at https://trivia.suimate.ai/${question.id}`,
+                `You may check the log for this question's answer checking process with Atoma TEE at https://trivia.suimate.ai/q/${question.id}`,
                 question.questionPostId
               );
               evaluationLog.isWinner = true;
@@ -370,5 +383,49 @@ export class TweetPostClient implements Client {
       evaluationLog.error = e.message;
       return { is_correct: false, reasoning: "" };
     }
+  }
+  async getFullThread(tweetId: string): Promise<TweetThread[]> {
+    const thread: TweetThread[] = [];
+    const rettiwt = new Rettiwt({ apiKey: process.env["TWITTER_COOKIES"] });
+
+    const collectReplies = async (id: string) => {
+      const tweet = await rettiwt.tweet.details(id);
+      if (!tweet) return;
+
+      thread.push({
+        tweetId: id,
+        tweetFullText: tweet.fullText,
+        createdAt_str: tweet.createdAt,
+        createdAt: new Date(tweet.createdAt),
+        tweetReplyTo: tweet.replyTo,
+        tweetBy: tweet.tweetBy,
+      });
+
+      if (tweet.replyTo) {
+        await collectReplies(tweet.replyTo);
+      }
+    };
+
+    await collectReplies(tweetId);
+    thread.sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+    return thread;
+  }
+  private async explainAnswer(announcementTweetId: string) {
+    const thread = await this.getFullThread(announcementTweetId);
+    let conversation = "";
+    for (const tweet of thread) {
+      conversation += `${tweet.tweetBy.fullName} (@${tweet.tweetBy.userName}): ${tweet.tweetFullText}\n`;
+    }
+    let ragResponse = "";
+    await ragManager.handleChatStream(conversation, (text) => {
+      ragResponse += text;
+    });
+    ragResponse = ragResponse.split("</think>")[1];
+    ragResponse = ragResponse.replaceAll("**", "").replaceAll("*", "");
+    const explainTweetId = await this.tweet(ragResponse, announcementTweetId);
+    await this.twitterClient.retweet(explainTweetId);
   }
 }
