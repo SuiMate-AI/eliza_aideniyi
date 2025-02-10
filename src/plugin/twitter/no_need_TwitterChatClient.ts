@@ -157,6 +157,7 @@ export class TwitterChatClient implements Client {
 
       const thread = await this.getFullThread(targetTweetId);
       const lastTweet = thread[thread.length - 1];
+      // this.rettiwt.tweet.details("");
 
       if (lastTweet.tweetBy.userName === process.env.TWITTER_USERNAME) {
         console.log("Skipping reply to self");

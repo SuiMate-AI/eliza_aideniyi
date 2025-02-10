@@ -7,7 +7,7 @@ import {
 import { TweetPostClient } from "./plugin/aideniyi/TweetPostClient.ts";
 
 export const character: Character = {
-  name: "AIdeniyi",
+  name: "SuiTrivia",
   plugins: [
     {
       name: "twitter-question-poster",

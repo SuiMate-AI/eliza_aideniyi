@@ -188,6 +188,7 @@ export class TwitterPostClient {
   }
 
   async start() {
+    if (process.env.DISABLE_TWITTER_DEFAULT_CLIENTS) return;
     if (!this.client.profile) {
       await this.client.init();
     }
@@ -1357,7 +1358,7 @@ export class TwitterPostClient {
     }
   }
 
-  async quickReply(tweetId: string, replyText: string) {
+  async quickReply(tweetId: string, replyText?: string) {
     try {
       let response;
       if (replyText.length < 280) {
