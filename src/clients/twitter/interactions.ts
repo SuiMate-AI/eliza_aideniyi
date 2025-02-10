@@ -469,7 +469,9 @@ export class TwitterInteractionClient {
       ragResponse += text;
     });
     console.log({ ragResponse });
-    ragResponse = ragResponse.split("</think>")[1];
+    ragResponse =
+      ragResponse.split("</think>")[1] ||
+      ragResponse.split("\n\n\n").slice(1).join("\n\n\n");
     let response = {
       user: this.runtime.character.name,
       text: "",
