@@ -456,7 +456,7 @@ export class TwitterInteractionClient {
         twitterMessageHandlerTemplate,
     });
 
-    // TODO: non-related response
+    // TODO: check if user's input is related to SUI
     // const response = await generateMessageResponse({
     //   runtime: this.runtime,
     //   context,
@@ -483,7 +483,7 @@ export class TwitterInteractionClient {
 
     // overwrite response
     // response.text = removeQuotes(response.text);
-    response.text = ragResponse;
+    response.text = ragResponse.replaceAll("**", "").replaceAll("*", "");
 
     console.error("[DEBUG] response", response);
 

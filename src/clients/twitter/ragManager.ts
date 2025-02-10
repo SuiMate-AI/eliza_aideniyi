@@ -2,7 +2,6 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { QdrantClient } from "@qdrant/js-client-rest";
 
-
 export class RAGManager {
   private encoder = new TextEncoder();
   private openai;
@@ -121,7 +120,7 @@ export class RAGManager {
         {
           role: "system",
           content:
-            "You are a professional blockchain consultant with extensive knowledge of everything related to Sui Blockchain. When you reply, you should include the url as markdown link.",
+            "You are a professional blockchain consultant with extensive knowledge of everything related to Sui Blockchain. When you reply, you should include the url as markdown link.  Output should be in the form of a twitter tweet, do not use any markdown for bold or italic text like **, *. Do not use url like [url_name](url), just use the url directly, and can include emojis. Instead of using # as title or **title** as title, use the title directly with emoji like {emoji} {title}. There is no length restrictions, your output can be very long up to 25000 characters, with several paragraphs. Use three line breaks to separate paragraphs.",
         },
         {
           role: "system",
