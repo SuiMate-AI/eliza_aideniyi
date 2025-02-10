@@ -463,27 +463,70 @@ export class TwitterInteractionClient {
     //   modelClass: ModelClass.LARGE,
     // });
 
-    let ragResponse = '';
-    await ragManager.handleChatStream(message.content.text, (text) => { // user input: message.content.text
-      ragResponse += text;
+    const senderUsername = tweet.username;
+    const receiverUsername = "EasonC13"; // TODO, please find it.
+    const amount = 1; // TODO, please find it
+
+    const res = await fetch("/api/xWallet/transfer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        giftdrop_api_key: "",
+      },
+      body: JSON.stringify({
+        senderUsername,
+        receiverUsername,
+        amount: amount * 10 ** 9,
+        coinType: "0x2::sui::SUI",
+        inputTwitterPostUrl: tweet.permanentUrl,
+        inputTwitterPostId: tweet.id,
+      }),
     });
-    ragResponse = ragResponse.split("</think>")[1];
+
+    const data = await res.json();
+
+    // return;
+    // let ragResponse = "";
+    // await ragManager.handleChatStream(message.content.text, (text) => {
+    //   // user input: message.content.text
+    //   ragResponse += text;
+    // });
+    // ragResponse = ragResponse.split("</think>")[1];
     let response = {
       user: this.runtime.character.name,
       text: "",
       action: "CONTINUE",
       inReplyTo: stringToUuid(tweet.id + "-" + this.runtime.agentId),
     };
-    
-    const removeQuotes = (str: string) => str.replace(/^['"](.*)['"]$/, "$1");
 
-    const stringId = stringToUuid(tweet.id + "-" + this.runtime.agentId);
+    if (data.success) {
+      console.log(
+        `Transfer ${amount} $SUI successfully from ${senderUsername} to ${receiverUsername}`
+      );
+      response.text =
+        `🎁 Transfer ${amount} $SUI successfully from @${senderUsername} to @${receiverUsername}!\n\n` +
+        `View Transaction at https://giftdrop.io/xwallet/tx/${data.transactionDigest}\n\n` +
+        `Manage your assets at https://giftdrop.io/xwallet`;
+    } else {
+      console.log(
+        `Transfer failed from ${senderUsername} to ${receiverUsername} for ${amount} SUI`
+      );
+      console.log("Error message: ", data.message);
+      response.text =
+        `❌ Transfer ${amount} $SUI failed from @${senderUsername} to @${receiverUsername}!\n\n` +
+        `Error message: ${data.message}\n\n` +
+        `You may manage your assets at https://giftdrop.io/xwallet`;
+    }
 
-    response.inReplyTo = stringId;
+    // const removeQuotes = (str: string) => str.replace(/^['"](.*)['"]$/, "$1");
 
-    // overwrite response
-    // response.text = removeQuotes(response.text);
-    response.text = ragResponse.replaceAll("**", "").replaceAll("*", "");
+    // const stringId = stringToUuid(tweet.id + "-" + this.runtime.agentId);
+
+    // response.inReplyTo = stringId;
+
+    // // overwrite response
+    // // response.text = removeQuotes(response.text);
+    // response.text = ragResponse.replaceAll("**", "").replaceAll("*", "");
 
     console.error("[DEBUG] response", response);
 
