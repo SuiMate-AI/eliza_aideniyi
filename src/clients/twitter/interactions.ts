@@ -480,7 +480,7 @@ export class TwitterInteractionClient {
           recipient: null,
           amount: null,
           symbol: null,
-        }
+        },
       };
     }
 
@@ -509,7 +509,7 @@ export class TwitterInteractionClient {
       const amountInBaseUnits = Math.floor(
         transferContent.amount * Math.pow(10, tokenSymbolList[0][1] as number)
       );
-  
+
       if (transferContent.recipient.startsWith("@")) {
         transferContent.recipient = transferContent.recipient.slice(1);
       }
@@ -536,7 +536,7 @@ export class TwitterInteractionClient {
           response.text =
             `💸 Transfer ${transferContent.amount} $SUI successfully from @${tweet.username} to @${transferContent.recipient}!\n\n` +
             `View Transaction at https://giftdrop.io/xwallet/tx/${data.transactionDigest}\n\n` +
-            `Manage your assets at @GiftDrop_io 👇 https://giftdrop.io/xwallet`;
+            `Manage your assets at X Wallet https://giftdrop.io/xwallet at @GiftDrop_io 👇 https://giftdrop.io/xwallet`;
         } else {
           console.log(
             `Transfer failed from ${tweet.username} to ${transferContent.recipient} for ${transferContent.amount} SUI`
