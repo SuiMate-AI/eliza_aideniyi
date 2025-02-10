@@ -448,7 +448,9 @@ export class TweetPostClient implements Client {
     await ragManager.handleChatStream(conversation, (text) => {
       ragResponse += text;
     });
-    ragResponse = ragResponse.split("</think>")[1];
+    ragResponse =
+      ragResponse.split("</think>")[1] ||
+      ragResponse.split("\n\n\n").slice(1).join("\n\n\n");
     ragResponse = ragResponse.replaceAll("**", "").replaceAll("*", "");
     const explainTweetId = await this.tweet(ragResponse, announcementTweetId);
     console.log({ explainTweetId });
