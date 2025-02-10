@@ -4,7 +4,6 @@ import {
   defaultCharacter,
   ModelProviderName,
 } from "@elizaos/core";
-import { TweetPostClient } from "./plugin/aideniyi/TweetPostClient.ts";
 
 export const character: Character = {
   name: "SuiTrivia",
@@ -13,10 +12,7 @@ export const character: Character = {
       name: "twitter-question-poster",
       description: "Post questions to twitter",
       services: [],
-      clients: [
-        new TweetPostClient(),
-        // new TwitterChatClient()
-      ],
+      clients: [],
     },
   ],
   clients: [Clients.TWITTER],
