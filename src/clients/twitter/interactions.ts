@@ -468,6 +468,7 @@ export class TwitterInteractionClient {
       // user input: message.content.text
       ragResponse += text;
     });
+    console.log({ ragResponse });
     ragResponse = ragResponse.split("</think>")[1];
     let response = {
       user: this.runtime.character.name,

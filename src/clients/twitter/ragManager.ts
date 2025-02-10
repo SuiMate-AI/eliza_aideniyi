@@ -26,7 +26,7 @@ export class RAGManager {
         model: "intfloat/multilingual-e5-large-instruct",
       }),
     });
-  
+
     const result = await response.json();
     return result.data[0].embedding;
   }
@@ -34,7 +34,10 @@ export class RAGManager {
   async handleChatStream(text: string, streamCallback: (text: string) => void) {
     // Stream knowledge points
     streamCallback("<knowledge>");
-    let knowledgePoints = await this.streamKnowledgePoints(text, streamCallback);
+    let knowledgePoints = await this.streamKnowledgePoints(
+      text,
+      streamCallback
+    );
     streamCallback("</knowledge>");
     if (knowledgePoints.includes("</think>")) {
       knowledgePoints = knowledgePoints.split("</think>")[1];
@@ -73,7 +76,7 @@ export class RAGManager {
         },
         {
           role: "user",
-          content: text
+          content: text,
         },
       ],
     });
@@ -94,13 +97,26 @@ export class RAGManager {
     });
 
     return (
-      await qdrantClient.search(process.env.QDRANT_SCRAPED_COLLECTION_NAME || "", {
-        vector: {
-          name: "content",
-          vector: embedding,
-        },
-        limit: 5,
-      })
+      await qdrantClient.search(
+        process.env.QDRANT_SCRAPED_COLLECTION_NAME || "",
+        {
+          vector: {
+            name: "content",
+            vector: embedding,
+          },
+          limit: 7,
+          filter: {
+            should: [
+              {
+                key: "duplicated",
+                match: {
+                  value: false,
+                },
+              },
+            ],
+          },
+        }
+      )
     ).map((result) => ({
       url: result.payload?.url,
       score: result.score,
