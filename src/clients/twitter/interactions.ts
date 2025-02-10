@@ -97,9 +97,9 @@ Thread of Tweets You Are Replying To:
 ` + shouldRespondFooter;
 
 export interface TransferContent extends Content {
-  recipient: string;
-  amount: number;
-  symbol: string;
+  recipient: string | null;
+  amount: number | null;
+  symbol: string | null;
 }
 
 export const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
@@ -113,7 +113,7 @@ Example response:
 }
 \`\`\`
 
-{{recentMessages}}
+{{currentPost}}
 
 Given the recent messages, extract the following information about the requested token transfer:
 - Tweet username, not including the @ symbol
@@ -466,14 +466,25 @@ export class TwitterInteractionClient {
     });
 
     // // Generate transfer content with the schema
-    const content = await generateObject({
-      runtime: this.runtime,
-      context: transferContext,
-      schema: transferSchema as any, // Use any as temporary workaround
-      modelClass: ModelClass.SMALL,
-    });
-    const transferContent = content.object as TransferContent;
+    let content = null;
+    try {
+      content = await generateObject({
+        runtime: this.runtime,
+        context: transferContext,
+        schema: transferSchema as any, // Use any as temporary workaround
+        modelClass: ModelClass.SMALL,
+      });
+    } catch (error) {
+      content = {
+        object: {
+          recipient: null,
+          amount: null,
+          symbol: null,
+        }
+      };
+    }
 
+    const transferContent = content.object as TransferContent;
     const tokenSymbolList = [["SUI", 9]];
 
     console.error("[DEBUG] transferContent", transferContent);
@@ -486,13 +497,6 @@ export class TwitterInteractionClient {
       tokenSymbolList.some((symbol) =>
         transferContent.symbol.toUpperCase().includes(symbol[0] as string)
       );
-    const amountInBaseUnits = Math.floor(
-      transferContent.amount * Math.pow(10, tokenSymbolList[0][1] as number)
-    );
-
-    if (transferContent.recipient.startsWith("@")) {
-      transferContent.recipient = transferContent.recipient.slice(1);
-    }
 
     let response = {
       user: this.runtime.character.name,
@@ -502,6 +506,14 @@ export class TwitterInteractionClient {
     };
 
     if (hasValidTransfer) {
+      const amountInBaseUnits = Math.floor(
+        transferContent.amount * Math.pow(10, tokenSymbolList[0][1] as number)
+      );
+  
+      if (transferContent.recipient.startsWith("@")) {
+        transferContent.recipient = transferContent.recipient.slice(1);
+      }
+
       try {
         const res = await fetch("https://giftdrop.io/api/xWallet/transfer", {
           method: "POST",
