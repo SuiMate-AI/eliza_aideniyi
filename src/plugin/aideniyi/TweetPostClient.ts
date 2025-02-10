@@ -178,14 +178,24 @@ export class TweetPostClient implements Client {
   // 檢查更新的邏輯
   async postTweets() {
     try {
-      const thirtyMinutesBefore = subMinutes(new Date(), 30);
-
+      const unAnsweredQuestions = await prisma.twitterQuestion.findMany({
+        where: {
+          winnerAnnouncementUrl: null,
+        },
+      });
+      if (unAnsweredQuestions.length > 4) {
+        console.log(
+          `[TweetPostClient] Already have ${unAnsweredQuestions.length} unAnsweredQuestions, skipping...`
+        );
+        return;
+      }
       // 查詢 TwitterQuestion
       const recentQuestions = await prisma.twitterQuestion.findFirst({
         orderBy: {
           createdAt: "desc",
         },
       });
+      const thirtyMinutesBefore = subMinutes(new Date(), 30);
       if (
         !recentQuestions ||
         recentQuestions.questionPostTime < thirtyMinutesBefore
@@ -196,26 +206,38 @@ export class TweetPostClient implements Client {
         let questions = await sheetHandler.getSheetAsJson();
 
         let questionToPost = parseQuestionRow(questions[0]);
+        let tweetId: string;
         while (true) {
-          const exist = await prisma.twitterQuestion.findFirst({
-            where: {
-              question: questionToPost.question,
-            },
-          });
-          if (exist) {
+          try {
+            const exist = await prisma.twitterQuestion.findFirst({
+              where: {
+                question: questionToPost.question,
+              },
+            });
+            if (exist) {
+              console.log(
+                `[TweetPostClient] Question "${questionToPost.question}" already exists, skipping...`
+              );
+              await sheetHandler.removeSecondRow();
+              questions = questions.slice(1);
+              questionToPost = parseQuestionRow(questions[0]);
+            }
+            tweetId = await this.tweet(questionToPost.question);
+            break;
+          } catch (e) {
             console.log(
-              `[TweetPostClient] Question "${questionToPost.question}" already exists, skipping...`
+              "Error when posting the question",
+              questionToPost.question,
+              e
             );
             await sheetHandler.removeSecondRow();
             questions = questions.slice(1);
             questionToPost = parseQuestionRow(questions[0]);
-          } else {
-            break;
           }
         }
 
         // do something with questions
-        const tweetId = await this.tweet(questionToPost.question);
+
         const twitterUser = await this.twitterClient.me();
         await prisma.twitterQuestion.create({
           data: {
@@ -249,23 +271,25 @@ export class TweetPostClient implements Client {
   async tweet(replyText: string, tweetId?: string) {
     let response;
     try {
+      let resultId;
       if (replyText.length < 280) {
         response = await this.twitterClient.sendTweet(replyText, tweetId);
+        const body = await response.json();
+        resultId = body.data.create_tweet.tweet_results.result.rest_id;
       } else {
-        response = await this.twitterClient.sendNoteTweet(replyText, tweetId);
+        response = await this.twitterClient.sendLongTweet(replyText, tweetId);
+        const body = await response.json();
+        resultId = body.data.notetweet_create.tweet_results.result.rest_id;
       }
-
-      const body = await response.json();
-      console.log("body", JSON.stringify(body, null, 2));
-
-      const resultTweetId = body.data.create_tweet.tweet_results.result
-        .rest_id as string;
-      console.log(
-        `[TweetPostClient] Successfully replied to tweet ${resultTweetId}`
-      );
-      return resultTweetId;
+      console.log(`[TweetPostClient] Successfully posted tweet ${resultId}`);
+      return resultId;
     } catch (error) {
-      console.error("Error", response);
+      console.error(
+        "Error",
+        JSON.stringify(error, null, 2),
+        "Result",
+        JSON.stringify(response, null, 2)
+      );
       throw error;
     }
   }
@@ -413,6 +437,7 @@ export class TweetPostClient implements Client {
     });
     return thread;
   }
+
   private async explainAnswer(announcementTweetId: string) {
     const thread = await this.getFullThread(announcementTweetId);
     let conversation = "";
@@ -426,6 +451,9 @@ export class TweetPostClient implements Client {
     ragResponse = ragResponse.split("</think>")[1];
     ragResponse = ragResponse.replaceAll("**", "").replaceAll("*", "");
     const explainTweetId = await this.tweet(ragResponse, announcementTweetId);
-    await this.twitterClient.retweet(explainTweetId);
+    console.log({ explainTweetId });
+    setTimeout(async () => {
+      await this.twitterClient.retweet(explainTweetId);
+    }, 5000);
   }
 }

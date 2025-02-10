@@ -1361,20 +1361,26 @@ export class TwitterPostClient {
   async quickReply(tweetId: string, replyText?: string) {
     try {
       let response;
+      let resultId;
       if (replyText.length < 280) {
         response = await this.client.twitterClient.sendTweet(
           replyText,
           tweetId
         );
+        const body = await response.json();
+        resultId = body.data.create_tweet.tweet_results.result.rest_id;
       } else {
         response = await this.client.twitterClient.sendNoteTweet(
           replyText,
           tweetId
         );
+        const body = await response.json();
+        resultId = body.data.notetweet_create.tweet_results.result.rest_id;
       }
-      console.log(`Successfully replied to tweet ${tweetId}`);
-      const body = await response.json();
-      return body.data.create_tweet.tweet_results.result.rest_id;
+      console.log(
+        `Successfully replied to tweet ${tweetId} for tweet id ${resultId}`
+      );
+      return resultId;
     } catch (error) {
       throw error;
     }
