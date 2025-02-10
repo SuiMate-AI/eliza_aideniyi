@@ -463,8 +463,9 @@ export class TwitterInteractionClient {
     //   modelClass: ModelClass.LARGE,
     // });
 
-    let ragResponse = '';
-    await ragManager.handleChatStream(message.content.text, (text) => { // user input: message.content.text
+    let ragResponse = "";
+    await ragManager.handleChatStream(message.content.text, (text) => {
+      // user input: message.content.text
       ragResponse += text;
     });
     ragResponse = ragResponse.split("</think>")[1];
@@ -474,7 +475,7 @@ export class TwitterInteractionClient {
       action: "CONTINUE",
       inReplyTo: stringToUuid(tweet.id + "-" + this.runtime.agentId),
     };
-    
+
     const removeQuotes = (str: string) => str.replace(/^['"](.*)['"]$/, "$1");
 
     const stringId = stringToUuid(tweet.id + "-" + this.runtime.agentId);

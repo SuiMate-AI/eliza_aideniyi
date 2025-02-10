@@ -4,12 +4,6 @@ export class TweetPostClient implements Client {
   // Start client connection
   async start(runtime: IAgentRuntime) {
     console.log("[TweetPostClient] Starting...");
-
-    // 每 10 秒執行一次
-    setInterval(async () => {
-      console.log("[TweetPostClient] Posting tweets...");
-      await this.postTweets();
-    }, 10 * 1000);
   }
 
   // Stop client connection
