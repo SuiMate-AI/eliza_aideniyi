@@ -522,9 +522,9 @@ export class TwitterInteractionClient {
             `Transfer ${transferContent.amount} $SUI successfully from ${tweet.username} to ${transferContent.recipient}`
           );
           response.text =
-            `🎁 Transfer ${transferContent.amount} $SUI successfully from @${tweet.username} to @${transferContent.recipient}!\n\n` +
+            `💸 Transfer ${transferContent.amount} $SUI successfully from @${tweet.username} to @${transferContent.recipient}!\n\n` +
             `View Transaction at https://giftdrop.io/xwallet/tx/${data.transactionDigest}\n\n` +
-            `Manage your assets at https://giftdrop.io/xwallet`;
+            `Manage your assets at @GiftDrop_io 👇 https://giftdrop.io/xwallet`;
         } else {
           console.log(
             `Transfer failed from ${tweet.username} to ${transferContent.recipient} for ${transferContent.amount} SUI`
