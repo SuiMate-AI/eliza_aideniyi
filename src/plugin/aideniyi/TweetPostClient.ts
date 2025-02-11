@@ -62,14 +62,14 @@ export class TweetPostClient implements Client {
         orderBy: {
           createdAt: "desc",
         },
-        take: 10 - unAnsweredQuestions.length,
+        take: 11 - unAnsweredQuestions.length,
       });
 
       let questionsToCheck = [...unAnsweredQuestions, ...extraQuestions];
 
       for (const question of questionsToCheck) {
         console.log(`Checking question ${question.id}: ${question.question}`);
-        await sleepRandom(1000, 10000);
+        await sleepRandom(5000, 10000);
         let questionPost;
         try {
           questionPost = await this.twitterClient.getTweet(
