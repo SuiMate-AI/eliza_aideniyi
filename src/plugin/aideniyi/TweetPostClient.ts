@@ -247,7 +247,9 @@ export class TweetPostClient implements Client {
               questions = questions.slice(1);
               questionToPost = parseQuestionRow(questions[0]);
             }
-            tweetId = await this.tweet(questionToPost.question);
+            tweetId = await this.tweet(
+              `[Question]\n\n${questionToPost.question}`
+            );
             break;
           } catch (e) {
             console.log(
