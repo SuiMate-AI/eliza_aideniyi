@@ -243,7 +243,7 @@ export class TweetPostClient implements Client {
           data: {
             question: questionToPost.question,
             metadata: JSON.stringify(questionToPost),
-            totalAward: 0.1 * 10 ** 9,
+            totalAward: 0.01 * 10 ** 9,
             awardTokenType: "0x2::sui::SUI",
             numberOfReceivers: 1,
             questionPostId: tweetId,
