@@ -143,7 +143,7 @@ export class TweetPostClient implements Client {
                   `You may check the log for this question's answer checking process with Atoma TEE at https://trivia.suimate.ai/q/${question.id}\n\n` +
                   `@SuiTipper please send the token to @${reply.username}`;
               }
-              haveWinner = true;
+
               const winnerTweetId = await this.tweet(messageToTweet, reply.id);
 
               await prisma.twitterQuestion.update({
@@ -156,20 +156,24 @@ export class TweetPostClient implements Client {
                     winnerTweetId,
                 },
               });
-              this.explainAnswer(winnerTweetId)
-                .then(() => {
-                  console.log(
-                    "Successfully explained the answer for question",
-                    question.id
-                  );
-                })
-                .catch((e) => {
-                  console.log("Error when explaining the answer", e);
-                });
-              await this.tweet(
-                `You may check the log for this question's answer checking process with Atoma TEE at https://trivia.suimate.ai/q/${question.id}`,
-                question.questionPostId
-              );
+              if (!haveWinner) {
+                this.explainAnswer(winnerTweetId)
+                  .then(() => {
+                    console.log(
+                      "Successfully explained the answer for question",
+                      question.id
+                    );
+                  })
+                  .catch((e) => {
+                    console.log("Error when explaining the answer", e);
+                  });
+                await this.tweet(
+                  `You may audit the log for this question's answer checking process with Atoma TEE at https://trivia.suimate.ai/q/${question.id}`,
+                  question.questionPostId
+                );
+              }
+              haveWinner = true;
+
               evaluationLog.isWinner = true;
             } else {
               await this.tweet(`${reasoning}`, reply.id);
