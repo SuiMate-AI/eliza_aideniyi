@@ -97,7 +97,7 @@ export class TweetPostClient implements Client {
         );
         console.log(`Get ${replies.length} replies`);
         replies.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-        let haveWinner = false;
+        let haveWinner = question.winnerAnnouncementUrl != null;
         for (const reply of replies) {
           if (reply.username === process.env.TWITTER_USERNAME) continue;
           const exist = await prisma.twitterAnswer.findFirst({
@@ -106,7 +106,7 @@ export class TweetPostClient implements Client {
             },
           });
           if (exist) continue;
-          if (haveWinner) break;
+          // if (haveWinner) break;
           await this.twitterClient.likeTweet(reply.id);
           let isWinner = false;
           let passEvaluation = false;
@@ -124,17 +124,28 @@ export class TweetPostClient implements Client {
             if (is_correct) {
               passEvaluation = true;
               isWinner = true;
-              haveWinner = true;
-              const winnerTweetId = await this.tweet(
+
+              let messageToTweet =
                 `Congratulations to @${
                   reply.username
                 } for answering the question correctly and winning ${
                   question.totalAward / 10 ** 9
                 } $${question.awardTokenType.split("::")[2]}!\n\n` +
+                `You may check the log for this question's answer checking process with Atoma TEE at https://trivia.suimate.ai/q/${question.id}\n\n` +
+                `@SuiTipper please send the token to @${reply.username}`;
+              if (!haveWinner) {
+                messageToTweet =
+                  `Congratulations to @${
+                    reply.username
+                  } for first answering the question correctly and winning ${
+                    question.totalAward / 10 ** 9
+                  } $${question.awardTokenType.split("::")[2]}!\n\n` +
                   `You may check the log for this question's answer checking process with Atoma TEE at https://trivia.suimate.ai/q/${question.id}\n\n` +
-                  `@SuiTipper please send the token to @${reply.username}`,
-                reply.id
-              );
+                  `@SuiTipper please send the token to @${reply.username}`;
+              }
+              haveWinner = true;
+              const winnerTweetId = await this.tweet(messageToTweet, reply.id);
+
               await prisma.twitterQuestion.update({
                 where: { id: question.id },
                 data: {
