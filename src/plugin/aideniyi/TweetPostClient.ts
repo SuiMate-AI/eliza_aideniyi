@@ -62,7 +62,7 @@ export class TweetPostClient implements Client {
         orderBy: {
           createdAt: "desc",
         },
-        take: 11 - unAnsweredQuestions.length,
+        take: 10 - unAnsweredQuestions.length,
       });
 
       let questionsToCheck = [...unAnsweredQuestions, ...extraQuestions];
