@@ -53,9 +53,23 @@ export class TweetPostClient implements Client {
         `[TweetPostClient] Checking ${unAnsweredQuestions.length} unAnsweredQuestions`
       );
 
-      for (const question of unAnsweredQuestions) {
+      const extraQuestions = await prisma.twitterQuestion.findMany({
+        where: {
+          id: {
+            notIn: unAnsweredQuestions.map((q) => q.id),
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 10 - unAnsweredQuestions.length,
+      });
+
+      let questionsToCheck = [...unAnsweredQuestions, ...extraQuestions];
+
+      for (const question of questionsToCheck) {
         console.log(`Checking question ${question.id}: ${question.question}`);
-        await sleepRandom(1000, 3000);
+        await sleepRandom(1000, 10000);
         let questionPost;
         try {
           questionPost = await this.twitterClient.getTweet(
@@ -243,7 +257,7 @@ export class TweetPostClient implements Client {
           data: {
             question: questionToPost.question,
             metadata: JSON.stringify(questionToPost),
-            totalAward: 0.01 * 10 ** 9,
+            totalAward: 0.001 * 10 ** 9,
             awardTokenType: "0x2::sui::SUI",
             numberOfReceivers: 1,
             questionPostId: tweetId,
