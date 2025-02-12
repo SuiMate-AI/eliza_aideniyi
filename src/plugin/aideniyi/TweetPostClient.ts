@@ -23,13 +23,14 @@ export class TweetPostClient implements Client {
     setTimeout(async () => {
       this.runtime = runtime;
       this.twitterClient = runtime.clients[0].client.twitterClient;
-      await this.checkAnswers();
+      await this.postTweets();
+      // await this.checkAnswers();
     }, 2000);
 
     // 每 60 秒執行一次
     setInterval(async () => {
       await this.postTweets();
-    }, parseInt(process.env.TWITTER_CHECK_ANSWERS_INTERVAL || "50") * 2 * 1000);
+    }, 10 * 1000);
 
     setInterval(async () => {
       await this.checkAnswers();
@@ -264,6 +265,7 @@ export class TweetPostClient implements Client {
             await sheetHandler.removeSecondRow();
             questions = questions.slice(1);
             questionToPost = parseQuestionRow(questions[0]);
+            await sleepRandom(5000, 10000);
           }
         }
 
@@ -310,6 +312,7 @@ export class TweetPostClient implements Client {
       } else {
         response = await this.twitterClient.sendLongTweet(replyText, tweetId);
         const body = await response.json();
+        console.log(body.data);
         resultId = body.data.notetweet_create.tweet_results.result.rest_id;
       }
       console.log(`[TweetPostClient] Successfully posted tweet ${resultId}`);
