@@ -23,8 +23,8 @@ export class TweetPostClient implements Client {
     setTimeout(async () => {
       this.runtime = runtime;
       this.twitterClient = runtime.clients[0].client.twitterClient;
-      await this.postTweets();
-      // await this.checkAnswers();
+      // await this.postTweets();
+      await this.checkAnswers();
     }, 2000);
 
     // 每 60 秒執行一次
