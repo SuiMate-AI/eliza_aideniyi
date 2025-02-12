@@ -60,6 +60,9 @@ class GoogleSheetHandler {
     if (rows.length > 1) {
       rows.splice(1, 1);
     }
+    // Append an empty row with the same number of columns as the header
+    const emptyRow = Array(rows[0].length).fill("");
+    rows.push(emptyRow);
 
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.sheetId,

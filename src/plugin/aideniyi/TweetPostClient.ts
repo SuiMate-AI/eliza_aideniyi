@@ -30,7 +30,7 @@ export class TweetPostClient implements Client {
     // 每 60 秒執行一次
     setInterval(async () => {
       await this.postTweets();
-    }, 10 * 1000);
+    }, parseInt(process.env.TWITTER_CHECK_ANSWERS_INTERVAL || "50") * 2 * 1000);
 
     setInterval(async () => {
       await this.checkAnswers();
@@ -213,7 +213,7 @@ export class TweetPostClient implements Client {
           winnerAnnouncementUrl: null,
         },
       });
-      if (unAnsweredQuestions.length > 4) {
+      if (unAnsweredQuestions.length > 5) {
         console.log(
           `[TweetPostClient] Already have ${unAnsweredQuestions.length} unAnsweredQuestions, skipping...`
         );
