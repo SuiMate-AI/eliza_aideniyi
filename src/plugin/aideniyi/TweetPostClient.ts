@@ -157,7 +157,7 @@ export class TweetPostClient implements Client {
                 },
               });
               if (!haveWinner) {
-                this.explainAnswer(winnerTweetId)
+                this.explainAnswer(reply.id, question)
                   .then(() => {
                     console.log(
                       "Successfully explained the answer for question",
@@ -439,6 +439,13 @@ export class TweetPostClient implements Client {
       return { is_correct: false, reasoning: "" };
     }
   }
+
+  async getTweet(tweetId: string) {
+    const rettiwt = new Rettiwt({ apiKey: process.env["TWITTER_COOKIES"] });
+    const tweet = await rettiwt.tweet.details(tweetId);
+    return tweet;
+  }
+
   async getFullThread(tweetId: string): Promise<TweetThread[]> {
     const thread: TweetThread[] = [];
     const rettiwt = new Rettiwt({ apiKey: process.env["TWITTER_COOKIES"] });
@@ -469,12 +476,21 @@ export class TweetPostClient implements Client {
     return thread;
   }
 
-  private async explainAnswer(announcementTweetId: string) {
-    const thread = await this.getFullThread(announcementTweetId);
+  private async explainAnswer(
+    announcementTweetId: string,
+    question: TwitterQuestion
+  ) {
+    const tweet = await this.getTweet(announcementTweetId);
+    const questionMetadata = parseQuestionRow(JSON.parse(question.metadata));
     let conversation = "";
-    for (const tweet of thread) {
-      conversation += `${tweet.tweetBy.fullName} (@${tweet.tweetBy.userName}): ${tweet.tweetFullText}\n`;
-    }
+
+    conversation += `
+      question: ${question.question}\n
+      answers: ${questionMetadata.example_answer_1}, ${questionMetadata.example_answer_2}, ${questionMetadata.example_answer_3}\n
+      context: ${questionMetadata.context}\n
+      winner: @${tweet.tweetBy.userName} (You should congratulate the winner in your output along with the explain for the answer)\n
+      winner post: ${tweet.tweetBy.fullName} (@${tweet.tweetBy.userName}): ${tweet.fullText}\n`;
+
     let ragResponse = "";
     await ragManager.handleChatStream(conversation, (text) => {
       ragResponse += text;
